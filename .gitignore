@@ -164,3 +164,4 @@ cython_debug/
 data/BeerAdvocate
 data/matched_beer_data
 data/RateBeer
+data/processed
