@@ -64,20 +64,24 @@ The directory structure of new project looks like this:
 ### Research questions
 We decided to group the different subquestions that were linked into different “tasks”. These are the main questions but we might go deeper in some of them depending on what we find interesting. 
 
-Task 1 : Number of users
+#### Task 1 : Number of users
 “Which platform attracts more reviewers over time ?”
     a. How does the number of reviewers evolve over time on both platforms ?
     b. How are each platform’s reviewers distributed around the world over time ? Which platform is dominant in each region ?
-Task 2 : Number of reviews
+
+#### Task 2 : Number of reviews
 “On which platform is there the most activity in terms of reviews ?”
     a. How does the number of reviews evolve over time on both platforms ?
     b. How are each platform’s activity distributed around the world over time ? 
-Task 3 : User activity
+
+#### Task 3 : User activity
 “On which platform are the reviewers most active ?”
     How is reviewers’ activity shared out ? What proportion of users have written more than a certain amount of reviews ?
-Task 4 : General trends
+
+#### Task 4 : General trends
 “What are the top-rated beers, styles, and breweries by year ? And overall ?”
-Task 5 : User rating
+
+#### Task 5 : User rating
 “How do reviewers rate the main types of beer on average on each platform ?”
 
 ### Methods 
@@ -86,21 +90,21 @@ one covering the pre-processing of the data (preprocess.ipynb), where both the d
 another for the research that will help us directly to answer the tasks (results.ipynb) 
 a final one covering research that doesn't directly answer our questions, but which has nevertheless helped us to understand the data (exploration.ipynb) and can maybe help us later for some insights.
 
-Task 1: Number of Users
+#### Task 1: Number of Users
     a. Extract the user's first activity date. Aggregate the data by year to count unique users joining each year on each platform. 
     b. Use the location, to categorize users by region and year. Group users by region and year, then calculate which platform has more users in each region.
 
-Task : 2 Number of Reviews
+#### Task : 2 Number of Reviews
     a. Aggregate the review count by year for each platform. 
     b. Link each review with its author’s location. Group reviews by location and year to analyze regional activity levels. For additional insight, normalize the review count by the number of users in each region.
 
-Task 3: User Activity
+#### Task 3: User Activity
 Extract the number of reviews for each user. Calculate the proportion of users with over a certain amount of reviews, as a percentage of total users on each platform.
 
-Task 4: General Trends
+#### Task 4: General Trends
 Identify top-rated beers, styles, and breweries by filtering records with high average scores and reviewing frequency. Analyze trends by year and overall for each platform. Aggregation by beer style and brewery can highlight popular preferences and consistent high ratings over time.
 
-Task 5: User Ratings
+#### Task 5: User Ratings
 Identify the main beer types (categorize each beer in a type). Calculate the average rating for each beer type on both platforms. We will have to be careful on interpreting this because each platform has a different way of evaluating the beers and it can also depend on several other factors (like the number of reviews for a type etc.)
 
 Some ideas for the visualization
