@@ -165,4 +165,5 @@ data/BeerAdvocate/
 data/matched_beer_data/
 data/RateBeer/
 data/zipped/
+data/bin/
 generated/
