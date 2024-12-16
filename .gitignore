@@ -1,6 +1,6 @@
 # Ignore the data folder at the root
 /data/
-
+/generated/
 # Do not ignore the data folder inside src
 !src/data/
 
