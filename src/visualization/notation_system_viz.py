@@ -27,14 +27,14 @@ def fig_comp_coeff_topic(
                 y="Coeff", 
                 color="index",  
                 text=df_combined["Coeff"].apply(lambda x: f"{x*100:.1f}%"),  
-                labels={'Coeff': 'Pourcentage (%)'},  
+                labels={'Coeff': 'Percentage (%)'},  
                 title="Comparison of coefficients by topic (in %)")
 
     fig.update_layout(
         yaxis=dict(tickformat='.0%', range=[0, 1]),  
         barmode='stack',  
         xaxis_title='Site',
-        yaxis_title='Pourcentage (%)',
+        yaxis_title='Percentage (%)',
         template='plotly_white',
     )
 
