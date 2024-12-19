@@ -21,10 +21,10 @@ class RateBeerDataset():
             # Reviews
             self.rb_reviews = self.read_rb_reviews(data_folder=data_folder, chunk_size=1_000_000)
 
+            self.preprocess()
+            
             # Experts 
             self.rb_experts = self.define_experts(threshold_experts_reviews=50)
-
-            self.preprocess()
 
             self.rb_breweries.to_csv(generated_folder + RB_BEERS_DATASET)
             self.rb_beers.to_csv(generated_folder + RB_BREWERIES_DATASET)
@@ -162,10 +162,10 @@ class BeerAdvocateDataset():
             # Reviews
             self.ba_reviews = self.read_ba_reviews(data_folder=data_folder, chunk_size=1_000_000)
 
+            self.preprocess()
+
             # Experts 
             self.ba_experts = self.define_experts(threshold_experts_reviews=50)
-
-            self.preprocess()
 
             self.ba_breweries.to_csv(generated_folder + BA_BEERS_DATASET)
             self.ba_beers.to_csv(generated_folder + BA_BREWERIES_DATASET)

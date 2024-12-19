@@ -8,7 +8,7 @@ import statsmodels.api as sm
 from scipy import stats
 from src.visualization.experts_selection_viz import *
 
-def fig_percentage_experts_site(reviews: pd.DataFrame, name:str):
+def fig_percentage_experts_site(reviews: pd.DataFrame):
     
     users = reviews.groupby('user_id').agg(num_reviews=('text', 'count'))
     total_reviews = users['num_reviews'].sum()
@@ -43,8 +43,9 @@ def fig_percentage_experts_site(reviews: pd.DataFrame, name:str):
     pourcentage_users = [user_proportion_experts, user_proportion_10, user_proportion_50, user_proportion_less_active]
     pourcentage_reviews = [review_proportion_experts, review_proportion_10, review_proportion_50, review_proportion_less_active]
     data = np.array([pourcentage_users, pourcentage_reviews])
-    return fig_percentage_experts_plotly(data/100, name)
+    return data / 100
 
 def fig_experts_selection(ba_reviews: pd.DataFrame, rb_reviews: pd.DataFrame):
-
-    return fig_percentage_experts_site(ba_reviews, "BeerAdvocate"), fig_percentage_experts_site(rb_reviews, "RateBeer")
+    data_exp_ba = fig_percentage_experts_site(ba_reviews)
+    data_exp_rb = fig_percentage_experts_site(rb_reviews)
+    return fig_exp_site(data_exp_ba, data_exp_rb)

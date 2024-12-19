@@ -1,19 +1,11 @@
 import pandas as pd
-import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-import plotly.express as px
-import time
-import os
-import nltk
 import plotly.express as px
 from nltk.sentiment import SentimentIntensityAnalyzer
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly.io as pio
 from src.visualization.sentiment_analysis_viz import *
+import vaderSentiment
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-def analyze_and_classify_sentiment(text):
+def analyze_and_classify_sentiment(text, analyzer):
     analyzer = SentimentIntensityAnalyzer()
     scores = analyzer.polarity_scores(text)
     compound_score = scores['compound']
@@ -30,11 +22,10 @@ def sentiment_analysis_analyser(ba_reviews: pd.DataFrame, rb_reviews: pd.DataFra
     ba_reviews_sentiment = ba_reviews.copy()
     rb_reviews_sentiment = rb_reviews.copy()
 
-    nltk.download('vader_lexicon')
-    print("downloaded")
+    analyzer = SentimentIntensityAnalyzer()
 
     # BeerAdvocate
-    sentiment_results_ba = ba_reviews_sentiment["text"].apply(analyze_and_classify_sentiment)
+    sentiment_results_ba = ba_reviews_sentiment["text"].apply(lambda text: analyze_and_classify_sentiment(text, analyzer))
     ba_reviews_sentiment["sentiment_scores"] = sentiment_results_ba.apply(lambda x: x[0])  
     ba_reviews_sentiment["sentiment_label"] = sentiment_results_ba.apply(lambda x: x[1])
     ba_reviews_sentiment["sentiment_scores"] = ba_reviews_sentiment["sentiment_scores"].astype(str)
@@ -48,7 +39,7 @@ def sentiment_analysis_analyser(ba_reviews: pd.DataFrame, rb_reviews: pd.DataFra
     print("fini BeerAdvocate")
 
     # RateBeer
-    sentiment_results_rb = rb_reviews_sentiment["text"].apply(analyze_and_classify_sentiment)
+    sentiment_results_rb = rb_reviews_sentiment["text"].apply(lambda text: analyze_and_classify_sentiment(text, analyzer))
     rb_reviews_sentiment["sentiment_scores"] = sentiment_results_rb.apply(lambda x: x[0])  
     rb_reviews_sentiment["sentiment_label"] = sentiment_results_rb.apply(lambda x: x[1])
     rb_reviews_sentiment["sentiment_scores"] = rb_reviews_sentiment["sentiment_scores"].astype(str)
@@ -59,11 +50,30 @@ def sentiment_analysis_analyser(ba_reviews: pd.DataFrame, rb_reviews: pd.DataFra
 
     rb_reviews_sentiment["compound_sentiment"] = rb_reviews_sentiment["sentiment_scores"].apply(eval).apply(lambda x: x['compound'])
 
-    return (
-            fig_distribution_sentiment(ba_reviews_sentiment),
-            fig_compound_sentiment(ba_reviews_sentiment),
-            fig_percentage(ba_reviews_sentiment),
-            fig_distribution_sentiment(rb_reviews_sentiment),
-            fig_compound_sentiment(rb_reviews_sentiment),
-            fig_percentage(rb_reviews_sentiment)
-    )
+    # Comparaison
+    def calculate_sentiment_distribution(df):
+        sentiment_counts = df["sentiment_label"].value_counts(normalize=True) * 100
+        return {
+            "positive": sentiment_counts.get("positive", 0),
+            "negative": sentiment_counts.get("negative", 0),
+            "neutral": sentiment_counts.get("neutral", 0),
+        }
+
+    beeradvocate_distribution = calculate_sentiment_distribution(ba_reviews_sentiment)
+    ratebeer_distribution = calculate_sentiment_distribution(rb_reviews_sentiment)
+
+    ratebeer_sizes = [ratebeer_distribution["positive"], ratebeer_distribution["negative"], ratebeer_distribution["neutral"]]
+    beeradvocate_sizes = [beeradvocate_distribution["positive"], beeradvocate_distribution["negative"], beeradvocate_distribution["neutral"]]
+    labels = ["Positive", "Negative", "Neutral"]
+
+    fig_list = [
+            fig_distribution_sentiment(ba_reviews_sentiment, title="BeerAdvocate"),
+            fig_compound_sentiment(ba_reviews_sentiment, title="BeerAdvocate"),
+            fig_percentage(ba_reviews_sentiment, title="BeerAdvocate"),
+            fig_distribution_sentiment(rb_reviews_sentiment, title="RateBeer"),
+            fig_compound_sentiment(rb_reviews_sentiment, title="RateBeer"),
+            fig_percentage(rb_reviews_sentiment, title="RateBeer"),
+            fig_sentiment_distribution(beeradvocate_sizes, ratebeer_sizes,  labels),
+            fig_distribution_sentiment_combined(ba_reviews_sentiment, rb_reviews_sentiment, "BeerAdvocate", "RateBeer"),
+    ]
+    return fig_list
