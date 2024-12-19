@@ -1,46 +1,45 @@
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-import numpy as np
-from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
-def fig_exp_site(data_exp_ba: np.array, data_exp_rb: np.array) -> go.Figure:
-
+def fig_exp_site(data_exp_ba: np.array, data_exp_rb: np.array):
+    # Define categories and bar types
     categories = ['Expert', 'Intermediate', 'Novice', 'Debutant']
     bars = ['Users (%)', 'Reviews (%)']
-    
-    data1_df = pd.DataFrame(data_exp_ba, columns=categories)
-    data1_df['site'] = bars
-    data1_df['dataset'] = 'BeerAdvocate'
-    
-    data2_df = pd.DataFrame(data_exp_rb, columns=categories)
-    data2_df['site'] = bars
-    data2_df['dataset'] = 'RateBeer'
-    
-    df_combined = pd.concat([data1_df, data2_df], ignore_index=True)
-    
-    df_melted = df_combined.melt(id_vars=['site', 'dataset'], var_name='index', value_name='Coeff')
-    
-    fig = px.bar(df_melted,
-                 x="site", 
-                 y="Coeff", 
-                 color="index",  
-                 text=df_melted["Coeff"].apply(lambda x: f"{x:.1f}%"), 
-                 facet_col="dataset",  
-                 labels={'Coeff': 'Percentage (%)', 'site': 'Category'},  
-                 title="Comparison of Coefficients by Category for Both Datasets",
-                 )
-    
-    fig.update_layout(
-        yaxis=dict(tickformat='.0%', range=[0, 1]),
-        barmode='stack',  
-        xaxis_title='Category',
-        yaxis_title='Percentage (%)',
-        template='plotly_white',
-        height=600,
-        width=1000
-    )
-    
-    fig.update_traces(texttemplate='%{text}', textposition='inside')
-    return fig  
+
+    # Convert data to DataFrame
+    data1_df = pd.DataFrame(data_exp_ba, columns=categories, index=bars)
+    data2_df = pd.DataFrame(data_exp_rb, columns=categories, index=bars)
+
+    # Plot configuration
+    fig, axes = plt.subplots(1, 2, figsize=(15, 10), sharey=True)
+    fig.suptitle("Comparison of Coefficients by Category for Both Datasets", fontsize=14)
+
+    # BeerAdvocate Stacked Bar Chart
+    ax = axes[0]
+    data1_df.plot(kind='bar', stacked=True, ax=ax, color=['#FF6666', '#FFA07A', '#FFD700', '#98FB98'], edgecolor='black')
+    ax.set_title("BeerAdvocate", fontsize=12)
+    ax.set_xlabel("Category", fontsize=10)
+    ax.set_ylabel("Percentage (%)", fontsize=10)
+    ax.set_xticklabels(bars, rotation=0)
+
+    # RateBeer Stacked Bar Chart
+    ax = axes[1]
+    data2_df.plot(kind='bar', stacked=True, ax=ax, color=['#4682B4', '#5F9EA0', '#7FFFD4', '#B0C4DE'], edgecolor='black')
+    ax.set_title("RateBeer", fontsize=12)
+    ax.set_xlabel("Category", fontsize=10)
+    ax.set_xticklabels(bars, rotation=0)
+
+    # Add percentage labels to the bars
+    for ax, data in zip(axes, [data1_df, data2_df]):
+        for bar_group, category in zip(ax.containers, categories):
+            for bar in bar_group:
+                height = bar.get_height()
+                if height > 0:
+                    ax.text(bar.get_x() + bar.get_width() / 2, bar.get_y() + height / 2,
+                            f"{100*height:.3f}%", ha='center', va='center', fontsize=8, color='black')
+
+    # Adjust layout
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.close()
+    return fig

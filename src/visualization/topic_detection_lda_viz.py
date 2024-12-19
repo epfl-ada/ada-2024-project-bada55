@@ -1,27 +1,37 @@
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+import seaborn as sns
 
-def fig_heatmap_topic_distribution_dataset(topic_distribution: pd.DataFrame) -> plt.Figure:
+def plot_dominant_topics_heatmap(topic_distribution):
+    """
+    Plot a heatmap of dominant topics by dataset.
+
+    Parameters:
+    topic_distribution (DataFrame): A pandas DataFrame where rows represent datasets 
+                                    (e.g., 'BeerAdvocate', 'RateBeer') and columns represent topics.
+
+    Returns:
+    matplotlib.figure.Figure: The generated heatmap figure.
+    """
+    # Create a new figure
     fig, ax = plt.subplots(figsize=(10, 6))
-    heatmap = ax.imshow(topic_distribution, cmap="YlGnBu", aspect="auto")
-    cbar = plt.colorbar(heatmap, ax=ax, fraction=0.046, pad=0.04)
-    cbar.ax.set_ylabel("Topic Count", rotation=270, labelpad=15)
-    for i in range(topic_distribution.shape[0]):
-        for j in range(topic_distribution.shape[1]):
-            value = topic_distribution.iloc[i, j]
-            color = "white" if value in [4524, 3793] else "black"  # Highlight specific values
-            font_size = max(10, min(25, value / 50))  # Scale font size between 10 and 25
-            ax.text(j, i, str(value), ha="center", va="center", 
-                        color=color, fontsize=font_size)
-    ax.set_xticks(np.arange(topic_distribution.shape[1]))
-    ax.set_yticks(np.arange(topic_distribution.shape[0]))
-    ax.set_xticklabels(topic_distribution.columns)
-    ax.set_yticklabels(topic_distribution.index)
+
+    # Normalize topic distribution and create the heatmap
+    normalized_distribution = (topic_distribution / topic_distribution.loc['BeerAdvocate'].sum() * 100).round(2)
+    sns.heatmap(
+        normalized_distribution,
+        annot=True,
+        cmap="YlGnBu",
+        cbar_kws={'label': 'Percentage'},
+        fmt='.2f',
+        ax=ax
+    )
+
+    # Set plot labels and title
+    ax.set_title("Heatmap of Dominant Topics by Dataset")
     ax.set_xlabel("Dominant Topic")
     ax.set_ylabel("Dataset")
-    ax.set_title("Topic Distribution by Dataset")
-    
+
+    # Adjust layout
     plt.tight_layout()
     plt.close()
     return fig

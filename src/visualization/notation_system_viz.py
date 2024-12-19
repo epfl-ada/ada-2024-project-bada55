@@ -1,51 +1,52 @@
+import matplotlib.pyplot as plt
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
 import numpy as np
-from plotly.subplots import make_subplots
 
-def fig_comp_coeff_topic(
-        coeff_ba: pd.Series,
-        coeff_rb: pd.Series
-        ) -> go.Figure:
-    
-    ba_coeff = pd.DataFrame({
-        'Coeff': coeff_ba,
-        'topic': ['appearance', 'aroma', 'palate', 'taste', 'overall'],
-        'site': 'Beer Advocate'
-    })
+def fig_comp_coeff_topic(coeff_ba: pd.Series, coeff_rb: pd.Series):
+    topics = ['appearance', 'aroma', 'palate', 'taste', 'overall']
+    coeff_ba_norm = coeff_ba / coeff_ba.sum() * 100
+    coeff_rb_norm = coeff_rb / coeff_rb.sum() * 100
 
-    rb_coeff = pd.DataFrame({
-        'Coeff': coeff_rb,
-        'Theme': ['appearance', 'aroma', 'palate', 'taste', 'overall'],
-        'site': 'Rate Beer'
-    })
+    fig, ax = plt.subplots(figsize=(10, 6))
+    width = 0.5
+    x = np.arange(2)
 
-    df_combined = pd.concat([ba_coeff, rb_coeff], axis=0).reset_index()
-    fig = px.bar(df_combined,
-                x="site", 
-                y="Coeff", 
-                color="index",  
-                text=df_combined["Coeff"].apply(lambda x: f"{x*100:.1f}%"),  
-                labels={'Coeff': 'Percentage (%)'},  
-                title="Comparison of coefficients by topic (in %)")
+    bottom_ba = 0
+    bottom_rb = 0
+    for i, topic in enumerate(topics):
+        ax.bar(
+            x[0], coeff_ba_norm[i], width, 
+            label=topic, 
+            bottom=bottom_ba, color=f'C{i}'
+        )
+        ax.text(
+            x[0], bottom_ba + coeff_ba_norm[i] / 2, 
+            f"{coeff_ba_norm[i]:.1f}%", ha='center', va='center', fontsize=10
+        )
+        bottom_ba += coeff_ba_norm[i]
 
-    fig.update_layout(
-        yaxis=dict(tickformat='.0%', range=[0, 1]),  
-        barmode='stack',  
-        xaxis_title='Site',
-        yaxis_title='Percentage (%)',
-        template='plotly_white',
-    )
+        ax.bar(
+            x[1], coeff_rb_norm[i], width, 
+            bottom=bottom_rb, color=f'C{i}'
+        )
+        ax.text(
+            x[1], bottom_rb + coeff_rb_norm[i] / 2, 
+            f"{coeff_rb_norm[i]:.1f}%", ha='center', va='center', fontsize=10
+        )
+        bottom_rb += coeff_rb_norm[i]
 
-    fig.update_traces(texttemplate='%{text}', textposition='inside')
-    
-    fig.update_layout(
-        height=600,  
-        width=800    
-    )
+    ax.set_title("Stacked Bar Chart of Coefficients by Topic (Normalized to 100%)", fontsize=14)
+    ax.set_ylabel("Percentage (%)", fontsize=12)
+    ax.set_xticks(x)
+    ax.set_xticklabels(['BeerAdvocate', 'RateBeer'], fontsize=12)
+    ax.legend(title="Topics", loc='upper right', fontsize=10)
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
 
+    plt.close()
     return fig
+
+
+
 
 def fig_pred_vs_reel(
         ba_reviews: pd.DataFrame,
@@ -54,79 +55,45 @@ def fig_pred_vs_reel(
         predict_rb: callable,
         r2_ba: float,
         r2_rb: float,
-) -> go.Figure:
-    y_ba = ba_reviews[["appearance","aroma","palate","taste","overall","rating"]]
-    y_ba = (y_ba - y_ba.min())/(y_ba.max() - y_ba.min())
-
-    y_rb = rb_reviews[["appearance","aroma","palate","taste","overall","rating"]]
-    y_rb = (y_rb - y_rb.min())/(y_rb.max() - y_rb.min())
+):
+    # Normalize features and ratings
+    def normalize(df):
+        return (df - df.min()) / (df.max() - df.min())
+    
+    y_ba = normalize(ba_reviews[["appearance", "aroma", "palate", "taste", "overall", "rating"]])
+    y_rb = normalize(rb_reviews[["appearance", "aroma", "palate", "taste", "overall", "rating"]])
 
     y_real_ba = y_ba["rating"]
     y_pred_ba = predict_ba(y_ba[['appearance', 'aroma', 'palate', 'taste', 'overall']])
-
     y_real_rb = y_rb["rating"]
     y_pred_rb = predict_rb(y_rb[['appearance', 'aroma', 'palate', 'taste', 'overall']])
 
-    range_viz = np.arange(len(y_real_ba))
-    np.random.shuffle(range_viz)
-    range_viz = range_viz[:int(0.001* len(y_real_ba))]
-    y_real_ba = y_real_ba.values[range_viz]
-    y_pred_ba = y_pred_ba.values[range_viz]
+    # Randomly sample a subset of data for visualization
+    range_ba = np.random.choice(len(y_real_ba), int(0.001 * len(y_real_ba)), replace=False)
+    y_real_ba = y_real_ba.iloc[range_ba]
+    y_pred_ba = y_pred_ba.iloc[range_ba]
 
-    range_viz = np.arange(len(y_real_rb))
-    np.random.shuffle(range_viz)
-    range_viz = range_viz[:int(0.001* len(y_real_rb))]
-    y_real_rb = y_real_rb.values[range_viz]
-    y_pred_rb = y_pred_rb.values[range_viz]
+    range_rb = np.random.choice(len(y_real_rb), int(0.001 * len(y_real_rb)), replace=False)
+    y_real_rb = y_real_rb.iloc[range_rb]
+    y_pred_rb = y_pred_rb.iloc[range_rb]
 
-    fig = make_subplots(
-        rows=1, cols=2, 
-        subplot_titles=[f"BeerAdvocate R² = {r2_ba:.2f}", f"RateBeer R² = {r2_rb:.2f}"]
-    )
+    # Create subplots
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    axes[0].scatter(y_real_ba, y_pred_ba, c='blue', alpha=0.7, label='BeerAdvocate Predictions')
+    axes[0].plot([y_real_ba.min(), y_real_ba.max()], [y_real_ba.min(), y_real_ba.max()], 'r--', label='y = x')
+    axes[0].set_title(f"BeerAdvocate R² = {r2_ba:.2f}", fontsize=12)
+    axes[0].set_xlabel("Real Rating", fontsize=10)
+    axes[0].set_ylabel("Predicted Rating", fontsize=10)
+    axes[0].legend()
 
-    x_range_1 = np.linspace(min(y_real_ba.min(), y_pred_ba.min()), max(y_real_ba.max(), y_pred_ba.max()), 100)
-    fig.add_trace(go.Scatter(
-        x=y_real_ba, 
-        y=y_pred_ba, 
-        mode='markers', 
-        name='Prediction ratings BeerAdvocate',
-        marker=dict(color='blue')
-    ), row=1, col=1)
-    fig.add_trace(go.Scatter(
-        x=x_range_1, 
-        y=x_range_1, 
-        mode='lines', 
-        name='y = x',
-        line=dict(color='red', dash='dot')
-    ), row=1, col=1)
+    axes[1].scatter(y_real_rb, y_pred_rb, c='green', alpha=0.7, label='RateBeer Predictions')
+    axes[1].plot([y_real_rb.min(), y_real_rb.max()], [y_real_rb.min(), y_real_rb.max()], 'r--', label='y = x')
+    axes[1].set_title(f"RateBeer R² = {r2_rb:.2f}", fontsize=12)
+    axes[1].set_xlabel("Real Rating", fontsize=10)
+    axes[1].set_ylabel("Predicted Rating", fontsize=10)
+    axes[1].legend()
 
-    x_range_2 = np.linspace(min(y_real_rb.min(), y_pred_rb.min()), max(y_real_rb.max(), y_pred_rb.max()), 100)
-    fig.add_trace(go.Scatter(
-        x=y_real_rb, 
-        y=y_pred_rb, 
-        mode='markers', 
-        name='Prediction ratings RateBeer',
-        marker=dict(color='green')
-    ), row=1, col=2)
-    fig.add_trace(go.Scatter(
-        x=x_range_2, 
-        y=x_range_2, 
-        mode='lines', 
-        name='y = x',
-        line=dict(color='red', dash='dot')
-    ), row=1, col=2)
-
-    fig.update_layout(
-        height=600,
-        width=1200,
-        showlegend=True,  
-        legend=dict(x=0.5, y=-0.2, xanchor='center', orientation='h')  
-    )
-
-    fig.update_xaxes(title_text="Real Rating", row=1, col=1)
-    fig.update_yaxes(title_text="Predicted Rating", row=1, col=1)
-
-    fig.update_xaxes(title_text="Real Rating", row=1, col=2)
-    fig.update_yaxes(title_text="Predicted Rating", row=1, col=2)
-
+    fig.suptitle("Predicted vs. Real Ratings", fontsize=14)
+    plt.tight_layout()
+    plt.close()
     return fig
