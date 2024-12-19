@@ -4,11 +4,13 @@ import scipy.stats as stats
 from scipy.stats import kstest
 
 import matplotlib.pyplot as plt
+from matplotlib.table import Table
 import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.subplots as sp
+from plotly.io import write_html
 
 from sklearn.preprocessing import StandardScaler, QuantileTransformer
 from sklearn.cluster import KMeans, DBSCAN
@@ -79,8 +81,7 @@ def features_implementation(users_info, selected_feat):
     for col in selected_feat:
         columns.append(col)
     
-    users_feat = users_info[columns]
-    users_feat.dropna(inplace=True)
+    users_feat = users_info[columns].dropna()
     users_feat = users_feat.drop(columns='platform').set_index('user_id')
 
     return users_feat
@@ -169,7 +170,7 @@ def fig_first_pca(ba_users_feat, rb_users_feat, transform='log', ba_color='#3E6C
     # Add BeerAdvocate data
     fig_pca.add_trace(go.Scatter(
         x=ba_data_pca[:, 0], 
-        y=-ba_data_pca[:, 1],
+        y=ba_data_pca[:, 1],
         mode='markers',
         name='BeerAdvocate',
         marker=dict(color=ba_color)
@@ -279,21 +280,24 @@ def clustering(features, nb_clusters):
 def label_definition(users, clust_feat, selected_feat):
     clust_users = clust_feat.join(users.set_index('user_id'), on='user_id', how='left')
 
-    cluster_mean = clust_users.groupby('cluster')['total_reviews'].mean()
-    sorted_clusters = cluster_mean.sort_values().index
-    cluster_labels = {sorted_clusters[0]: 'beginners', 
-                    sorted_clusters[1]: 'intermediate', 
-                    sorted_clusters[2]: 'experienced'}
+    cluster_mean_total_reviews = clust_users.groupby('cluster')['total_reviews'].mean()
+    sorted_tr_clusters = cluster_mean_total_reviews.sort_values().index
+    cluster_mean_time_spacing = clust_users.groupby('cluster')['mean_time_spacing'].mean()
+    sorted_ts_clusters = cluster_mean_time_spacing.sort_values().index
 
-    clust_users['experience_level'] = clust_users['cluster'].map(cluster_labels)
+    cluster_labels = {sorted_ts_clusters[0]: 'transient', 
+                    sorted_ts_clusters[2]: 'occasional', 
+                    sorted_tr_clusters[2]: 'experienced'}
 
-    columns = ['experience_level']
+    clust_users['users_type'] = clust_users['cluster'].map(cluster_labels)
+
+    columns = ['users_type']
     for col in selected_feat:
         columns.append(col)
     users_clust_feat = users.copy()
     users_clust_feat = clust_users[columns]
 
-    cluster_summary = users_clust_feat.groupby('experience_level').agg(['mean','median','std','min','max'])
+    cluster_summary = users_clust_feat.groupby('users_type').agg(['mean','median','std','min','max'])
 
     return (clust_users, users_clust_feat, cluster_summary)
     
@@ -303,7 +307,7 @@ def label_definition(users, clust_feat, selected_feat):
 def add_pca(clust_users, selected_feat):
     data_for_pca = clust_users[selected_feat]
     pca = PCA(n_components=2)
-    pca_result = pca.fit_transform(data_for_pca)
+    pca_result = pca.fit_transform(StandardScaler().fit_transform(np.log(1e-5+data_for_pca)))
     clust_users_pca = clust_users.copy()
     clust_users_pca['PCA_1'] = pca_result[:,0]
     clust_users_pca['PCA_2'] = pca_result[:,1]
@@ -312,14 +316,14 @@ def add_pca(clust_users, selected_feat):
 def fig_second_pca(users_feat, platform):
     if platform=='BeerAdvocate':
         color_map = {
-            'beginners': '#ADD8E6',    # Light Blue
-            'intermediate': '#4682B4', # Medium Blue
+            'transient': '#ADD8E6',    # Light Blue
+            'occasional': '#4682B4', # Medium Blue
             'experienced': '#00008B'       # Dark Blue
         }
     elif platform=='RateBeer':
         color_map = {
-            'beginners': '#FFCCCC',    # Light Red
-            'intermediate': '#FF6666', # Medium Red
+            'transient': '#FFCCCC',    # Light Red
+            'occasional': '#FF6666', # Medium Red
             'experienced': '#990000'       # Dark Red
         }
     
@@ -327,7 +331,7 @@ def fig_second_pca(users_feat, platform):
         users_feat,
         x='PCA_1',
         y='PCA_2',
-        color='experience_level',
+        color='users_type',
         color_discrete_map=color_map,
         title="BA PCA with Clusters",
         labels={'PCA_1': 'Principal Component 1', 'PCA_2': 'Principal Component 2'},
@@ -337,91 +341,181 @@ def fig_second_pca(users_feat, platform):
     return fig_pca
 
 
-import plotly.graph_objects as go
-import plotly.subplots as sp
-from plotly.io import write_html
 
-def generate_user_scatterplots(ba_data, rb_data, output_file="clust_feat_scatterplots.html"):
+def plot_combined_scatter(ba_clustering_df, rb_clustering_df, features):
     """
-    Generate a single HTML file with scatter plot subplots comparing BA and RB user clusters.
-    
-    Args:
-        ba_data (DataFrame): DataFrame for BeerAdvocate user clusters.
-        rb_data (DataFrame): DataFrame for RateBeer user clusters.
-        output_file (str): Path to save the HTML file.
-    
-    Returns:
-        fig
+    Plots a 2x1 grid (BeerAdvocate and RateBeer) with 3x2 sub-subplots showing scatterplots 
+    with clusters in different colors.
+
+    Parameters:
+        ba_clustering_df (DataFrame): BeerAdvocate clustering dataset.
+        rb_clustering_df (DataFrame): RateBeer clustering dataset.
+        features (list of features pair)
     """
     # Color map
-    color_map = {
-        'beginners': '#F5B7B1', # light pink 
-        'intermediate': '#F4D03F', # yellow
-        'experienced': '#196F3D' # deep green
+    ba_color_map = {
+        'occasional': '#4682B4', # Medium Blue
+        'transient': '#ADD8E6',    # Light Blue
+        'experienced': '#00008B'       # Dark Blue
     }
 
-    # Initialize subplots
-    fig = sp.make_subplots(
-        rows=2, cols=4,
-        subplot_titles=[
-            "BA: Active Period vs Total Reviews",
-            "RB: Active Period vs Total Reviews",
-            "BA: Total Reviews vs Style Diversity",
-            "RB: Total Reviews vs Style Diversity",
-            "BA: Active Period vs Mean Time Spacing",
-            "RB: Active Period vs Mean Time Spacing",
-            "BA: Active Period vs Std Time Spacing",
-            "RB: Active Period vs Std Time Spacing"
-        ]
-    )
+    rb_color_map = {
+        'occasional': '#FF6666', # Medium Red
+        'transient': '#FFCCCC',    # Light Red
+        'experienced': '#990000'       # Dark Red
+    }
+    
+    # Define dimensions
+    n = len(features)
+    if n == 1:
+        m = 1
+    elif (n%2==0):
+        m = 2
+    else:
+        m = 1
 
-    # Define subplot configurations
-    plot_configs = [
-        (ba_data, 1, 1, 'active_period', 'total_reviews', "log"),
-        (rb_data, 2, 1, 'active_period', 'total_reviews', "log"),
-        (ba_data, 1, 2, 'total_reviews', 'style_diversity', "log"),
-        (rb_data, 2, 2, 'total_reviews', 'style_diversity', "log"),
-        (ba_data, 1, 3, 'active_period', 'mean_time_spacing', None),
-        (rb_data, 2, 3, 'active_period', 'mean_time_spacing', None),
-        (ba_data, 1, 4, 'active_period', 'std_time_spacing', None),
-        (rb_data, 2, 4, 'active_period', 'std_time_spacing', None)
+    # Create figure and axes
+    fig, axes = plt.subplots(int(n/m), int(2*m), figsize=(20, 15))
+
+    # Left column for BeerAdvocate
+    for i, (x, y) in enumerate(features):
+        row, col = divmod(i, 2)  # Calculate row and column for subplots
+        ax = axes[row, col]
+
+        for level, color in ba_color_map.items():
+            filtered_data = ba_clustering_df[ba_clustering_df['users_type'] == level]
+            sns.scatterplot(data=filtered_data, x=x, y=y, color=color, alpha=0.7, s=20, ax=ax, label=level)
+
+        ax.set_title(f"BA: {x} vs {y}", fontsize=10)
+        ax.set_xlabel(x.replace("_", " ").capitalize())
+        ax.set_ylabel(y.replace("_", " ").capitalize())
+        if x == "total_reviews":
+            ax.set_xscale("log")
+        if row == 0 and col == 0:  # Add legend only once
+            ax.legend()
+
+    # Right column for RateBeer
+    for i, (x, y) in enumerate(features):
+        row, col = divmod(i, 2)  # Calculate row and column for subplots
+        ax = axes[row, col + 2]  # Shift to the right for RateBeer plots
+        
+        for level, color in rb_color_map.items():
+            filtered_data = rb_clustering_df[rb_clustering_df['users_type'] == level]
+            sns.scatterplot(data=filtered_data, x=x, y=y, color=color, alpha=0.7, s=20, ax=ax, label=level)
+
+        ax.set_title(f"RB: {x} vs {y}", fontsize=10)
+        ax.set_xlabel(x.replace("_", " ").capitalize())
+        ax.set_ylabel(y.replace("_", " ").capitalize())
+        if x == "total_reviews":
+            ax.set_xscale("log")
+        if row == 0 and col == 0:  # Add legend only once
+            ax.legend()
+
+    return (fig, axes)
+
+
+
+# Cluster VS Threshold
+
+
+def plot_scatter_active_time_total_reviews(
+    ba_threshold_df, rb_threshold_df, ba_clustering_df, rb_clustering_df
+):
+    """
+    Plots a 2x1 grid (BeerAdvocate and RateBeer) with 3x2 sub-subplots showing combined scatterplots 
+    for thresholding (dark gray) and clustering (light gray).
+
+    Parameters:
+        ba_threshold_df (DataFrame): BeerAdvocate threshold dataset.
+        rb_threshold_df (DataFrame): RateBeer threshold dataset.
+        ba_clustering_df (DataFrame): BeerAdvocate clustering dataset.
+        rb_clustering_df (DataFrame): RateBeer clustering dataset.
+    """
+    # Color map
+    ba_color_map = {
+        'occasional': '#4682B4', # Medium Blue
+        'transient': '#ADD8E6',    # Light Blue
+        'experienced': '#00008B'       # Dark Blue
+    }
+
+    rb_color_map = {
+        'occasional': '#FF6666', # Medium Red
+        'transient': '#FFCCCC',    # Light Red
+        'experienced': '#990000'       # Dark Red
+    }
+
+    # Create figure and axes
+    fig, axes = plt.subplots(1, 2, figsize=(10, 8))  # 1x2 subplots
+
+    # Left column for BeerAdvocate
+    
+    ax = axes[0]
+    
+    # Plot clustering
+    for level, color in ba_color_map.items():
+        filtered_data = ba_clustering_df[ba_clustering_df['users_type'] == level]
+        sns.scatterplot(data=filtered_data, x='active_period', y='total_reviews', color=color, alpha=0.7, s=20, ax=ax, label="Clustering : {level}")
+
+    # Plot threshold in black
+    sns.scatterplot(data=ba_threshold_df, x='active_period', y='total_reviews', color="black", alpha=0.7, s=20, ax=ax, label="Threshold")
+
+    ax.set_title(f"BA: Active Period vs Total Reviews", fontsize=10)
+    ax.set_xlabel('Active Period')
+    ax.set_ylabel('Total Reviews')
+    
+    ax.set_yscale("log")
+    ax.legend()
+
+    # Right column for RateBeer
+    ax = axes[1]
+    
+    # Plot clustering
+    for level, color in rb_color_map.items():
+        filtered_data = rb_clustering_df[rb_clustering_df['users_type'] == level]
+        sns.scatterplot(data=filtered_data, x='active_period', y='total_reviews', color=color, alpha=0.7, s=20, ax=ax, label="Clustering : {level}")
+
+    # Plot threshold in black
+    sns.scatterplot(data=rb_threshold_df, x='active_period', y='total_reviews', color="black", alpha=0.7, s=20, ax=ax, label="Threshold")
+
+    ax.set_title(f"RB: Active Period vs Total Reviews", fontsize=10)
+    ax.set_xlabel('Active Period')
+    ax.set_ylabel('Total Reviews')
+    
+    ax.set_yscale("log")
+    ax.legend()
+
+    # Adjust layout
+    return (fig, axes)
+
+
+
+def table_clusterVSthreshold(ba_experts_threshold, rb_experts_threshold, ba_experts_clustering, rb_experts_clustering):
+
+    # Données
+    headers = ["", "BeerAdvocate", "  RateBeer  "]
+    rows = [
+        ["Number of experienced users with Clustering method", len(ba_experts_clustering), len(rb_experts_clustering)],
+        ["Number of experienced users with Threshold method", len(ba_experts_threshold), len(rb_experts_threshold)],
+        [
+            "Percentage of experienced users from Threshold in group from Clustering", 
+            f"{(len(set(ba_experts_threshold['user_id']).intersection(set(ba_experts_clustering['user_id']))) / len(ba_experts_threshold) * 100):.2f}%",
+            f"{(len(set(rb_experts_threshold['user_id']).intersection(set(rb_experts_clustering['user_id']))) / len(rb_experts_threshold) * 100):.2f}%"
+        ]
     ]
 
-    # Add scatter plots to subplots
-    for data, row, col, x, y, x_axis_type in plot_configs:
-        for level, color in color_map.items():
-            filtered_data = data[data['experience_level'] == level]
-            fig.add_trace(
-                go.Scatter(
-                    x=filtered_data[x],
-                    y=filtered_data[y],
-                    mode='markers',
-                    marker=dict(color=color, size=6),
-                    name=level.capitalize(),
-                    legendgroup=level,
-                    showlegend=(row == 1 and col == 1)  # Show legend only once
-                ),
-                row=row, col=col
-            )
-        fig.update_xaxes(title_text=x.replace('_', ' ').title(), row=row, col=col, type=x_axis_type)
-        fig.update_yaxes(title_text=y.replace('_', ' ').title(), row=row, col=col)
+    # Création du tableau
+    fig, ax = plt.subplots(figsize=(8,4))
+    ax.axis('tight')
+    ax.axis('off')
 
-    # Update layout
-    fig.update_layout(
-        title_text="BA vs RB User Cluster Comparison",
-        height=1000,
-        width=2500,
-        showlegend=True
-    )
+    #plt.title("Proportion of experienced users from threshold method ", fontsize=25)
 
-    # Save the figure as an HTML file
-    write_html(fig, file=output_file, auto_open=False)
+    table = ax.table(cellText=rows, colLabels=headers, loc='center', cellLoc='center', bbox=[0, 0, 1.5, 1])
+    table.auto_set_font_size(False)
+    table.set_fontsize(12)
+    table.auto_set_column_width(col=list(range(len(headers))))
 
-    return fig
-
-
-
-
+    return (fig, ax)
 
 
 
