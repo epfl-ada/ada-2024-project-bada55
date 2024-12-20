@@ -56,7 +56,6 @@ def fig_pred_vs_reel(
         r2_ba: float,
         r2_rb: float,
 ):
-    # Normalize features and ratings
     def normalize(df):
         return (df - df.min()) / (df.max() - df.min())
     
@@ -68,7 +67,6 @@ def fig_pred_vs_reel(
     y_real_rb = y_rb["rating"]
     y_pred_rb = predict_rb(y_rb[['appearance', 'aroma', 'palate', 'taste', 'overall']])
 
-    # Randomly sample a subset of data for visualization
     range_ba = np.random.choice(len(y_real_ba), int(0.001 * len(y_real_ba)), replace=False)
     y_real_ba = y_real_ba.iloc[range_ba]
     y_pred_ba = y_pred_ba.iloc[range_ba]
@@ -77,7 +75,6 @@ def fig_pred_vs_reel(
     y_real_rb = y_real_rb.iloc[range_rb]
     y_pred_rb = y_pred_rb.iloc[range_rb]
 
-    # Create subplots
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     axes[0].scatter(y_real_ba, y_pred_ba, c='blue', alpha=0.7, label='BeerAdvocate Predictions')
     axes[0].plot([y_real_ba.min(), y_real_ba.max()], [y_real_ba.min(), y_real_ba.max()], 'r--', label='y = x')

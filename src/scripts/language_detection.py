@@ -23,7 +23,7 @@ def apply_language_detection(reviews_experts: pd.DataFrame, name_dataset: str):
     total_language = df_languages['num_languages'].sum()
     df_languages['review_proportion_percentage'] = (df_languages['num_languages'] / total_language * 100).round(5)
     df_languages = df_languages.sort_values(by= 'num_languages', ascending= False)
-    print("Languages detected for {name_dataset}: ")
+    print(f"Languages detected for {name_dataset}: ")
     fig_pie_proportion = fig_pie_proportion_languages(df_languages, name_dataset)
     reviews_experts_en = reviews_experts[reviews_experts['language'] == '__en'].copy()
     return df_languages, fig_pie_proportion, reviews_experts_en

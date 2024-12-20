@@ -1,6 +1,13 @@
 # Ignore the data folder at the root
-/data/
-/generated/
+/data/BeerAdvocate/beer.csv
+/data/BeerAdvocate/breweries.csv
+/data/BeerAdvocate/users.csv
+/data/BeerAdvocate/reviews.txt/
+/data/bin/ 
+/data/RateBeer/beer.csv
+/data/RateBeer/breweries.csv
+/data/RateBeer/users.csv
+/data/RateBeer/reviews.txt/
 
 # Do not ignore the data folder inside src
 !src/data/

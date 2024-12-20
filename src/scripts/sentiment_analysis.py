@@ -1,12 +1,13 @@
 import pandas as pd
 import plotly.express as px
-from nltk.sentiment import SentimentIntensityAnalyzer
 from src.visualization.sentiment_analysis_viz import *
 import vaderSentiment
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-def analyze_and_classify_sentiment(text, analyzer):
-    analyzer = SentimentIntensityAnalyzer()
+analyzer = SentimentIntensityAnalyzer()
+
+
+def analyze_and_classify_sentiment(text):
     scores = analyzer.polarity_scores(text)
     compound_score = scores['compound']
     if compound_score >= 0.05:
@@ -22,10 +23,8 @@ def sentiment_analysis_analyser(ba_reviews: pd.DataFrame, rb_reviews: pd.DataFra
     ba_reviews_sentiment = ba_reviews.copy()
     rb_reviews_sentiment = rb_reviews.copy()
 
-    analyzer = SentimentIntensityAnalyzer()
-
     # BeerAdvocate
-    sentiment_results_ba = ba_reviews_sentiment["text"].apply(lambda text: analyze_and_classify_sentiment(text, analyzer))
+    sentiment_results_ba = ba_reviews_sentiment["text"].apply(lambda text: analyze_and_classify_sentiment(text))
     ba_reviews_sentiment["sentiment_scores"] = sentiment_results_ba.apply(lambda x: x[0])  
     ba_reviews_sentiment["sentiment_label"] = sentiment_results_ba.apply(lambda x: x[1])
     ba_reviews_sentiment["sentiment_scores"] = ba_reviews_sentiment["sentiment_scores"].astype(str)
@@ -36,10 +35,8 @@ def sentiment_analysis_analyser(ba_reviews: pd.DataFrame, rb_reviews: pd.DataFra
 
     ba_reviews_sentiment["compound_sentiment"] = ba_reviews_sentiment["sentiment_scores"].apply(eval).apply(lambda x: x['compound'])
 
-    print("fini BeerAdvocate")
-
     # RateBeer
-    sentiment_results_rb = rb_reviews_sentiment["text"].apply(lambda text: analyze_and_classify_sentiment(text, analyzer))
+    sentiment_results_rb = rb_reviews_sentiment["text"].apply(lambda text: analyze_and_classify_sentiment(text))
     rb_reviews_sentiment["sentiment_scores"] = sentiment_results_rb.apply(lambda x: x[0])  
     rb_reviews_sentiment["sentiment_label"] = sentiment_results_rb.apply(lambda x: x[1])
     rb_reviews_sentiment["sentiment_scores"] = rb_reviews_sentiment["sentiment_scores"].astype(str)
