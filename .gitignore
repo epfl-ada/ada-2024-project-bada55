@@ -7,6 +7,7 @@
 /data/RateBeer/breweries.csv
 /data/RateBeer/users.csv
 /data/RateBeer/reviews.txt/
+/data/bin/lid.176.bin
 
 # Do not ignore the data folder inside src
 !src/data/
