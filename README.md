@@ -31,7 +31,6 @@ The directory structure of new project looks like this:
 
 <code>
 │   .gitignore
-│   main.py
 │   pip_requirements.txt
 │   README.md
 │   result.ipynb
