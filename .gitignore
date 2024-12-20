@@ -11,6 +11,7 @@
 
 # Do not ignore the data folder inside src
 !src/data/
+!generated/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
