@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 ## Project Structure
 
-The directory structure of new project looks like this:
+Here is the structure the project must have if result.ipynb needs to be runned : 
 
 <code>
 │   .gitignore
