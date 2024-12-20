@@ -19,7 +19,7 @@ conda create -n bada55 python=3.11 or ...
 conda activate bada55
 
 # install requirements
-pip install -r pip_requirements.txt
+pip install -r requirements.txt
 
 # run results.ipynb, which contains all the results 
 #the two functions : BeerAdvocateDataset and RateBeerDataset are called at the beginning to preprocess both datasets
