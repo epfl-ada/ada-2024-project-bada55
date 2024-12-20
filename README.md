@@ -37,11 +37,25 @@ The directory structure of new project looks like this:
 │
 ├───data
 │   │   beerCan.jpg
+│   │
 │   ├───BeerAdvocate
+│   │   │   beers.csv
+│   │   │   breweries.csv
+│   │   │   users.csv
+│   │   │
 │   │   └───reviews.txt
+│   │           reviews.txt
+│   │
 │   ├───bin
+│   │       lid.176.bin
+│   │
 │   └───RateBeer
+│       │   beers.csv
+│       │   breweries.csv
+│       │   users.csv
+│       │
 │       └───reviews.txt
+│               ratings.txt
 │
 ├───generated
 │   ├───BeerAdvocate
