@@ -4,7 +4,7 @@ This is the repository of the <a href="https://zaclibaud.github.io/bADA55.github
 
 ## Abstract
 
-In a world where decisions are increasingly influenced by online platforms, choosing one beer review platform between BeerAdvocate or RateBeer, can feel like choosing between Spotify and Deezer. Just as music lovers want to know which streaming service better matches their taste, beer enthusiasts want to understand which platform offers more reliable and insightful reviews. Our goal is to help answer this question by diving deep into the unique characteristics of both platforms to compare them.
+In a world where decisions are increasingly influenced by online platforms, choosing one beer review platform between BeerAdvocate or RateBeer, can feel like choosing between Spotify and Deezer. Just as music lovers want to know which streaming service better matches their taste, beer enthusiasts want to understand which platform offers more reliable and insightful reviews. Our goal is to help answer this question by diving deep into the unique characteristics of both platforms to compare them. To analyse the characteristics of each platform, we based our analysis on experienced users. After selecting the experts, we analysed their general feelings as well as the topics that stood out the most. We found fundamental differences in the way experts acted on each site. As a result, we offer a site recommendation based on your profile.
 
 ## Quickstart
 
